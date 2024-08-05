@@ -32,9 +32,10 @@ def generate_city_map(output_dir, scooter_density='normal', battery_density='nor
     bottom_margin = (29.7 - 20) / 2 / 2.54  # bottom margin in inches
     ax.set_position([left_margin / (21 / 2.54), bottom_margin / (29.7 / 2.54), 20 / 21, 20 / 29.7])  # [left, bottom, width, height]
 
-    # Track road positions for scooter placement
+    # Track road positions for scooter placement and count black fields
     road_positions = []
     street_units = 0
+    black_fields_count = 0
 
     # Generate streets
     for x in range(0, width, 2):
@@ -43,17 +44,24 @@ def generate_city_map(output_dir, scooter_density='normal', battery_density='nor
                 # Horizontal street
                 length = random.randint(1, 2) * 2
                 for i in range(length + 1):
-                    road_positions.append((x + i + 0.5, y + 0.5))  # Center the position
+                    pos_x, pos_y = x + i + 0.5, y + 0.5
+                    if pos_x < width and pos_y < height:
+                        road_positions.append((pos_x, pos_y))  # Center the position
+                        black_fields_count += 1
                     street_units += 1
                 ax.add_patch(plt.Rectangle((x, y), length, 1, color="black"))
             if random.choice([True, False]):
                 # Vertical street
                 length = random.randint(1, 2) * 2
                 for i in range(length + 1):
-                    road_positions.append((x + 0.5, y + i + 0.5))  # Center the position
+                    pos_x, pos_y = x + 0.5, y + i + 0.5
+                    if pos_x < width and pos_y < height:
+                        road_positions.append((pos_x, pos_y))  # Center the position
+                        black_fields_count += 1
                     street_units += 1
                 ax.add_patch(plt.Rectangle((x, y), 1, length, color="black"))
     logging.debug(f"Streets generated with {street_units} units")
+    logging.debug(f"Number of black fields: {black_fields_count}")
 
     # Place warehouse
     warehouse_x, warehouse_y = random.choice(road_positions)
@@ -88,7 +96,7 @@ def generate_city_map(output_dir, scooter_density='normal', battery_density='nor
     logging.debug("Scooters placed")
 
     # Add combined information box above the map
-    info_text = f'Warehouse: {warehouse_x:.1f}, {warehouse_y:.1f}\nScooters: {num_scooters}\nFull Batteries: {num_batteries}\nStreet Units: {street_units}'
+    info_text = f'Warehouse: {warehouse_x:.1f}, {warehouse_y:.1f}\nScooters: {num_scooters}\nFull Batteries: {num_batteries}\nStreet Units: {street_units}\nBlack Fields: {black_fields_count}'
     ax.text(0.5, 1.05, info_text, transform=ax.transAxes, fontsize=12, bbox=dict(facecolor='white', alpha=0.5), ha='center')
     logging.debug("Information box added above the map")
 
@@ -123,7 +131,7 @@ def generate_city_map(output_dir, scooter_density='normal', battery_density='nor
     plt.close()
     logging.debug(f"Map saved as: {filename}")
 
-    return filename, num_scooters, num_batteries, street_units, timestamp
+    return filename, num_scooters, num_batteries, street_units, black_fields_count, timestamp
 
 @app.route('/')
 def index():
@@ -136,12 +144,13 @@ def index():
 def generate_map():
     scooter_density = request.form.get('scooter_density')
     battery_density = request.form.get('battery_density')
-    map_file, num_scooters, num_batteries, street_units, timestamp = generate_city_map(GENERATED_MAPS_DIR, scooter_density, battery_density)
+    map_file, num_scooters, num_batteries, street_units, black_fields_count, timestamp = generate_city_map(GENERATED_MAPS_DIR, scooter_density, battery_density)
     map_details = {
         "filename": os.path.basename(map_file),
         "num_scooters": num_scooters,
         "num_batteries": num_batteries,
         "street_units": street_units,
+        "black_fields_count": black_fields_count,
         "timestamp": timestamp
     }
     logging.debug("Map generation completed")

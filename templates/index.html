@@ -90,7 +90,7 @@
             .then(response => response.json())
             .then(data => {
                 document.getElementById('loadingOverlay').style.display = 'none';
-                alert(`Map ${data.filename} generated at ${data.timestamp}, featuring ${data.num_scooters} scooters, and ${data.num_batteries} full batteries, and ${data.street_units} units of streets.`);
+                alert(`Map ${data.filename} generated at ${data.timestamp}, featuring ${data.num_scooters} scooters, and ${data.num_batteries} full batteries, ${data.street_units} units of streets, and ${data.black_fields_count} black fields.`);
                 window.location.href = `/download/${data.filename}`;
             });
         };
