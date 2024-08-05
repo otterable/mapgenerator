@@ -21,13 +21,55 @@
         .overlay img {
             width: 100px;
         }
+        .map-image {
+            max-width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="text-center">City Map Generator</h1>
         <div class="text-center mt-4">
-            <button class="btn btn-primary" onclick="generateMap()">Generate Map</button>
+            <form id="generateForm" action="/generate_map" method="post">
+                <div class="form-group">
+                    <label for="scooterDensity">Scooter Density</label>
+                    <select name="scooter_density" id="scooterDensity" class="form-control">
+                        <option value="little">Little</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="many">Many</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="batteryDensity">Battery Density</label>
+                    <select name="battery_density" id="batteryDensity" class="form-control">
+                        <option value="little">Little</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="many">Many</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Generate Map</button>
+            </form>
+        </div>
+        <div class="text-center mt-4">
+            <h2>Generated Maps History</h2>
+            <div class="row">
+                {% for file in files %}
+                    <div class="col-md-4">
+                        <div class="card mb-4 shadow-sm">
+                            <img src="{{ url_for('static', filename='generated_maps/' + file) }}" class="card-img-top map-image" alt="{{ file }}">
+                            <div class="card-body">
+                                <p class="card-text">{{ file }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('download_map', filename=file) }}" class="btn btn-sm btn-outline-secondary">Download</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
@@ -36,10 +78,28 @@
     </div>
 
     <script>
-        function generateMap() {
+        document.getElementById('generateForm').onsubmit = function(event) {
+            event.preventDefault();
             document.getElementById('loadingOverlay').style.display = 'block';
-            window.location.href = '/generate_map';
-        }
+
+            const formData = new FormData(event.target);
+            fetch('/generate_map', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                alert(`Map ${data.filename} generated at ${data.timestamp}, featuring ${data.num_scooters} scooters, and ${data.num_batteries} full batteries, and ${data.street_units} units of streets.`);
+                window.location.href = `/download/${data.filename}`;
+            });
+        };
+
+        window.onload = function() {
+            if (document.getElementById('loadingOverlay').style.display === 'block') {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        };
     </script>
 </body>
 </html>
