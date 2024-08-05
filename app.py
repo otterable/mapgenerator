@@ -18,14 +18,19 @@ logging.basicConfig(level=logging.DEBUG)
 
 def generate_city_map(output_dir, scooter_density='normal', battery_density='normal'):
     logging.debug("Starting map generation")
-    width = 20  # units
-    height = 29  # units (20x29 fits within A4 with borders)
+    width = 20  # units (20 cm)
+    height = 20  # units (20 cm)
     street_width = 1
 
-    # Create the figure and axis
-    fig, ax = plt.subplots(figsize=(width, height))
+    # Create the figure and axis for the A4 size
+    fig, ax = plt.subplots(figsize=(21/2.54, 29.7/2.54))  # A4 size in inches
     ax.set_aspect('equal', adjustable='box')
     logging.debug("Figure and axis created")
+
+    # Adjust the position of the map within the A4 page
+    left_margin = (21 - 20) / 2 / 2.54  # left margin in inches
+    bottom_margin = (29.7 - 20) / 2 / 2.54  # bottom margin in inches
+    ax.set_position([left_margin / (21 / 2.54), bottom_margin / (29.7 / 2.54), 20 / 21, 20 / 29.7])  # [left, bottom, width, height]
 
     # Track road positions for scooter placement
     road_positions = []
@@ -90,21 +95,30 @@ def generate_city_map(output_dir, scooter_density='normal', battery_density='nor
     # Formatting
     ax.set_xlim(0, width)
     ax.set_ylim(0, height)
-    ax.set_xticks(np.arange(0, width, 1))
-    ax.set_yticks(np.arange(0, height, 1))
+    ax.set_xticks(np.arange(0, width + 1, 1))
+    ax.set_yticks(np.arange(0, height + 1, 1))
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.grid(True)
     ax.legend()
     logging.debug("Map formatting completed")
 
-    # Save the map to a file
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = os.path.join(output_dir, f"city_map_{timestamp}.pdf")
+    # Add dotted lines
+    ax.plot([0, 0], [0, -bottom_margin * 2.54], linestyle=':', color='black')
+    ax.plot([width, width], [0, -bottom_margin * 2.54], linestyle=':', color='black')
+    ax.plot([0, -left_margin * 2.54], [0, 0], linestyle=':', color='black')
+    ax.plot([0, -left_margin * 2.54], [height, height], linestyle=':', color='black')
+    ax.plot([width, width + left_margin * 2.54], [0, 0], linestyle=':', color='black')
+    ax.plot([width, width + left_margin * 2.54], [height, height], linestyle=':', color='black')
+    ax.plot([0, 0], [height, height + bottom_margin * 2.54], linestyle=':', color='black')
+    ax.plot([width, width], [height, height + bottom_margin * 2.54], linestyle=':', color='black')
 
     # Add instructions in the empty space
     fig.text(0.5, 0.01, "Print this map on A4 paper with 100% scale to ensure each unit is exactly 1cm.", ha='center', fontsize=12)
     
+    # Save the map to a file
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = os.path.join(output_dir, f"city_map_{timestamp}.pdf")
     plt.savefig(filename, format='pdf', bbox_inches='tight')
     plt.close()
     logging.debug(f"Map saved as: {filename}")
